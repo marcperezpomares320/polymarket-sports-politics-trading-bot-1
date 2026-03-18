@@ -1,11 +1,12 @@
 # Polymarket Copy Trading Bot
 
-A **Polymarket copy bot** for copy trading on Polymarket prediction markets. Watches a target wallet and automatically copies `BUY` and `SELL` trades with configurable sizing and risk caps.
+A **Polymarket copy bot** for copy trading on Polymarket prediction markets. Supports **all market categories** (crypto, sports, politics, etc.) by copying whatever markets the target wallet trades. Watches a target wallet and automatically copies `BUY` and `SELL` trades with configurable sizing and risk caps.
 
 **Keywords:** polymarket trading bot, polymarket copy bot, polymarket copy trading bot, prediction market bot, automated trading
 
 ## What It Does
 
+- Works across **all Polymarket markets/categories** (crypto, sports, politics, etc.) by copying whatever markets the target wallet trades.
 - Watches a target wallet via REST polling.
 - Uses WebSocket subscriptions for faster market updates when enabled.
 - Copies `BUY` and optionally `SELL` trades (set `COPY_SELLS=true` to copy sells; requires holding position from copied BUYs).

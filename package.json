@@ -1,5 +1,5 @@
 {
-  "name": "polymarket-copy-bot",
+  "name": "polymarket-trading-bot",
   "version": "1.0.0",
   "main": "index.js",
   "type": "module",
@@ -13,18 +13,14 @@
     "start:prod": "node dist/index.js"
   },
   "keywords": [
+    "polymarket trading bot",
     "polymarket",
     "polymarket-copy-bot",
     "polymarket copy bot",
     "polymarket copy trading",
     "polymarket copy trading bot",
-    "polymarket trading bot",
     "copy trading",
-    "copy bot",
-    "prediction markets",
-    "clob",
-    "polygon",
-    "ethereum"
+    "copy bot"
   ],
   "author": "",
   "license": "ISC",
