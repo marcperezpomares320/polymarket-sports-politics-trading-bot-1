@@ -1,11 +1,6 @@
-import type { Trade } from './monitor.js';
-import { config } from './config.js';
-import { PositionTracker } from './positions.js';
-
-export interface RiskCheckResult {
-  allowed: boolean;
-  reason?: string;
-}
+import type { Trade, RiskCheckResult } from '../../types/index.js';
+import { config } from '../../config/index.js';
+import { PositionTracker } from './position-tracker.js';
 
 export class RiskManager {
   private sessionNotional = 0;

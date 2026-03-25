@@ -1,16 +1,20 @@
 import dotenv from 'dotenv';
-import { logger } from './utils/logger.js';
+import { logger } from '../utils/logger.js';
+import type { Config } from '../types/index.js';
 
 dotenv.config();
 
 function parseCsv(value?: string): string[] {
   if (!value) return [];
-  return value.split(',').map((v) => v.trim()).filter(Boolean);
+  return value
+    .split(',')
+    .map((v) => v.trim())
+    .filter(Boolean);
 }
 
 const useWebSocket = process.env.USE_WEBSOCKET !== 'false';
 
-export const config = {
+export const config: Config = {
   targetWallet: process.env.TARGET_WALLET || '',
   privateKey: process.env.PRIVATE_KEY || '',
   polymarketGeoToken: process.env.POLYMARKET_GEO_TOKEN || '',
@@ -53,13 +57,13 @@ export const config = {
     wsAssetIds: parseCsv(process.env.WS_ASSET_IDS),
     wsMarketIds: parseCsv(process.env.WS_MARKET_IDS),
     allowedCategories: parseCsv(process.env.ALLOWED_CATEGORIES || 'sports,politics'),
-  }
+  },
 };
 
 export function validateConfig(): void {
   const required = ['targetWallet', 'privateKey'];
   for (const key of required) {
-    if (!config[key as keyof typeof config]) {
+    if (!config[key as keyof Config]) {
       throw new Error(`Missing required config: ${key}`);
     }
   }

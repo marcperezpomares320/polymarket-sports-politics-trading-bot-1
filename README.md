@@ -1,17 +1,50 @@
-# Polymarket Copy Trading Bot
+# Polymarket Sports & Politics Trading Bot
 
-A **Polymarket copy bot** for copy trading on Polymarket prediction markets. Supports **all market categories** (crypto, sports, politics, etc.) by copying whatever markets the target wallet trades. Watches a target wallet and automatically copies `BUY` and `SELL` trades with configurable sizing and risk caps.
+A **Polymarket copy bot** for copy trading on Polymarket prediction markets, specifically optimized for **sports and politics markets**. Watches a target wallet and automatically copies `BUY` and `SELL` trades with configurable sizing and risk caps.
 
-**Keywords:** polymarket trading bot, polymarket copy bot, polymarket copy trading bot, prediction market bot, automated trading
+**Keywords:** polymarket trading bot, polymarket copy bot, polymarket copy trading bot, sports trading, politics trading, prediction market bot, automated trading
 
-## What It Does
+## Features
 
-- Works across **all Polymarket markets/categories** (crypto, sports, politics, etc.) by copying whatever markets the target wallet trades.
-- Watches a target wallet via REST polling.
-- Uses WebSocket subscriptions for faster market updates when enabled.
-- Copies `BUY` and optionally `SELL` trades (set `COPY_SELLS=true` to copy sells; requires holding position from copied BUYs).
-- Auto-checks/sets required token approvals in EOA mode.
-- Applies position sizing, slippage, and optional notional risk caps.
+- **Category Filtering**: Only trades in sports and politics markets (configurable)
+- **Modular Architecture**: Well-structured codebase with separated concerns
+- **Type Safety**: Full TypeScript support with strict typing
+- **WebSocket & REST**: Dual monitoring for real-time and polled trades
+- **Risk Management**: Configurable position and session limits
+- **Position Tracking**: Automatic position reconciliation and management
+
+## Project Structure
+
+```
+src/
+├── core/                 # Main application logic
+│   ├── bot.ts           # Main bot orchestrator
+│   └── trade-handler.ts # Trade processing logic
+├── services/            # Business logic services
+│   ├── monitor/         # Trade monitoring services
+│   │   ├── trade-monitor.ts
+│   │   └── websocket-monitor.ts
+│   └── trader/          # Trading services
+│       ├── trade-executor.ts
+│       ├── position-tracker.ts
+│       └── risk-manager.ts
+├── config/              # Configuration management
+│   └── index.ts
+├── types/               # TypeScript type definitions
+│   └── index.ts
+├── utils/               # Utility functions
+│   └── logger.ts
+└── scripts/             # CLI scripts
+    ├── generate-api-creds.ts
+    └── test-api-creds.ts
+```
+
+## Prerequisites
+
+- Node.js 18+ and npm
+- Polygon EOA funded with `USDC.e` collateral and `POL` (MATIC) for gas
+- Polymarket account tied to the same EOA/private key
+- Polygon RPC URL (QuickNode recommended)
 
 ## Prerequisites
 
@@ -29,25 +62,40 @@ Polymarket restricts access in some regions. **If you are in a restricted region
 - The bot derives/creates User CLOB credentials from `PRIVATE_KEY` at startup.
 - Builder dashboard keys are for attribution and are not valid trading auth credentials for order placement.
 
-## Setup
+## Development
+
+### Setup
 
 1. Install dependencies:
-
 ```bash
 npm install
 ```
 
 2. Create your local env file:
-
 ```bash
 cp .env.example .env
 ```
 
-3. Fill required values in `.env`:
+3. Fill required values in `.env`
 
-- `TARGET_WALLET`
-- `PRIVATE_KEY`
-- `RPC_URL`
+### Scripts
+
+- `npm start` - Start the bot
+- `npm run dev` - Start in development mode with watch
+- `npm run build` - Build for production
+- `npm run lint` - Run ESLint
+- `npm run format` - Format code with Prettier
+- `npm test` - Run tests
+- `npm run clean` - Clean build artifacts
+
+### Code Quality
+
+This project uses:
+- **TypeScript** for type safety
+- **ESLint** for code linting
+- **Prettier** for code formatting
+- **Jest** for testing
+- **Husky** for git hooks (planned)
 
 4. (Optional) Generate and inspect user API credentials:
 
@@ -88,6 +136,7 @@ npm run start:prod
 - `COPY_SELLS`: `true|false` — copy SELL trades in addition to BUY (default: true)
 - `EXIT_AFTER_FIRST_SELL_COPY`: `true|false` — exit successfully after first SELL is copied (default: false)
 - `MAX_SESSION_NOTIONAL`, `MAX_PER_MARKET_NOTIONAL`: `0` disables caps
+- `ALLOWED_CATEGORIES`: comma-separated list of market categories to trade (e.g. `sports,politics`; default: `sports,politics`)
 
 See `.env.example` for the full list.
 

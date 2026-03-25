@@ -1,14 +1,4 @@
-import type { Trade } from './monitor.js';
-
-export interface PositionState {
-  tokenId: string;
-  market: string;
-  outcome: string;
-  shares: number;
-  notional: number;
-  avgPrice: number;
-  lastUpdated: number;
-}
+import type { Trade, PositionState } from '../../types/index.js';
 
 export class PositionTracker {
   private positions = new Map<string, PositionState>();
@@ -30,17 +20,16 @@ export class PositionTracker {
         continue;
       }
 
-      const market =
-        pos?.condition_id ||
-        pos?.conditionId ||
-        pos?.market ||
-        pos?.market_id ||
-        '';
+      const market = pos?.condition_id || pos?.conditionId || pos?.market || pos?.market_id || '';
 
       const outcome = pos?.outcome || pos?.side || 'YES';
 
-      const shares = this.parseNumber(pos?.size ?? pos?.quantity ?? pos?.shares ?? pos?.balance ?? pos?.position);
-      const notional = this.parseNumber(pos?.usdcValue ?? pos?.notional ?? pos?.usdc ?? pos?.value ?? pos?.collateral);
+      const shares = this.parseNumber(
+        pos?.size ?? pos?.quantity ?? pos?.shares ?? pos?.balance ?? pos?.position
+      );
+      const notional = this.parseNumber(
+        pos?.usdcValue ?? pos?.notional ?? pos?.usdc ?? pos?.value ?? pos?.collateral
+      );
       const avgPrice =
         this.parseNumber(pos?.avgPrice ?? pos?.averagePrice ?? pos?.entryPrice ?? pos?.price) ||
         (shares > 0 ? Math.abs(notional / shares) : 0);
@@ -69,7 +58,7 @@ export class PositionTracker {
     price: number;
     side: 'BUY' | 'SELL';
   }): void {
-    const { trade, notional, shares, price, side } = params;
+    const { trade, notional, shares, side } = params;
     const key = trade.tokenId;
     const existing = this.positions.get(key);
 

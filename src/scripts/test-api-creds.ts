@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import { Wallet } from 'ethers';
 import { ClobClient } from '@polymarket/clob-client';
-import { logger } from './logger.js';
+import { logger } from '../utils/logger.js';
 
 dotenv.config();
 
@@ -18,7 +18,9 @@ async function main(): Promise<void> {
     throw new Error('Missing PRIVATE_KEY in .env');
   }
   if (!apiKey || !secret || !passphrase) {
-    throw new Error('Missing POLYMARKET_USER_API_KEY / POLYMARKET_USER_SECRET / POLYMARKET_USER_PASSPHRASE in .env');
+    throw new Error(
+      'Missing POLYMARKET_USER_API_KEY / POLYMARKET_USER_SECRET / POLYMARKET_USER_PASSPHRASE in .env'
+    );
   }
 
   const signer = new Wallet(privateKey);

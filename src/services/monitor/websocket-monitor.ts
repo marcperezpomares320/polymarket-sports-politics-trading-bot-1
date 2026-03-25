@@ -1,7 +1,7 @@
 import WebSocket from 'ws';
-import { config } from './config.js';
-import type { Trade } from './monitor.js';
-import { logger } from './logger.js';
+import { config } from '../../config/index.js';
+import type { Trade, WsChannel, WsAuth } from '../../types/index.js';
+import { logger } from '../../utils/logger.js';
 
 interface WebSocketMessage {
   event_type?: string;
@@ -24,14 +24,6 @@ interface LastTradeMessage {
   outcome?: string;
   maker?: string;
   taker?: string;
-}
-
-export type WsChannel = 'market' | 'user';
-
-export interface WsAuth {
-  apiKey: string;
-  secret: string;
-  passphrase: string;
 }
 
 export class WebSocketMonitor {
@@ -262,7 +254,8 @@ export class WebSocketMonitor {
       }
 
       const rawTimestamp = message.timestamp || Date.now();
-      const normalizedTimestamp = rawTimestamp < 1_000_000_000_000 ? rawTimestamp * 1000 : rawTimestamp;
+      const normalizedTimestamp =
+        rawTimestamp < 1_000_000_000_000 ? rawTimestamp * 1000 : rawTimestamp;
 
       const trade: Trade = {
         txHash: `ws-${Date.now()}`,
@@ -275,7 +268,9 @@ export class WebSocketMonitor {
         outcome: this.normalizeOutcome(message.outcome),
       };
 
-      logger.info(`⚡ WebSocket trade detected: ${trade.side} ${trade.size} USDC @ ${trade.price.toFixed(3)}`);
+      logger.info(
+        `⚡ WebSocket trade detected: ${trade.side} ${trade.size} USDC @ ${trade.price.toFixed(3)}`
+      );
 
       // Trigger callback
       if (this.onTradeCallback) {
@@ -287,7 +282,9 @@ export class WebSocketMonitor {
   }
 
   private normalizeOutcome(value?: string): 'YES' | 'NO' | 'UNKNOWN' {
-    const normalized = String(value ?? '').trim().toUpperCase();
+    const normalized = String(value ?? '')
+      .trim()
+      .toUpperCase();
     if (normalized === 'YES' || normalized === 'NO') {
       return normalized;
     }
@@ -322,7 +319,9 @@ export class WebSocketMonitor {
     this.reconnectAttempts++;
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
 
-    logger.info(`🔄 Reconnecting in ${delay / 1000}s (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+    logger.info(
+      `🔄 Reconnecting in ${delay / 1000}s (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})...`
+    );
 
     setTimeout(async () => {
       try {
@@ -366,7 +365,9 @@ export class WebSocketMonitor {
     };
   }
 
-  private buildWsAuth(): { apikey: string; apiKey: string; secret: string; passphrase: string } | undefined {
+  private buildWsAuth():
+    | { apikey: string; apiKey: string; secret: string; passphrase: string }
+    | undefined {
     if (!this.auth) return undefined;
     return {
       apikey: this.auth.apiKey,
@@ -388,7 +389,10 @@ export class WebSocketMonitor {
     }
 
     // Only send if we have something to subscribe to
-    if ((payload.assets_ids && payload.assets_ids.length) || (payload.markets && payload.markets.length)) {
+    if (
+      (payload.assets_ids && payload.assets_ids.length) ||
+      (payload.markets && payload.markets.length)
+    ) {
       this.ws.send(JSON.stringify(payload));
     }
   }

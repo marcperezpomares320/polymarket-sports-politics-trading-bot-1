@@ -1,19 +1,7 @@
 import axios from 'axios';
-import { config } from './config.js';
-import { logger } from './utils/logger';
-
-export type TradeOutcome = 'YES' | 'NO' | 'UNKNOWN';
-
-export interface Trade {
-  txHash: string;
-  timestamp: number;
-  market: string;
-  tokenId: string;
-  side: 'BUY' | 'SELL';
-  price: number;
-  size: number;
-  outcome: TradeOutcome;
-}
+import { config } from '../../config/index.js';
+import { logger } from '../../utils/logger.js';
+import type { Trade, TradeOutcome } from '../../types/index.js';
 
 export class TradeMonitor {
   private lastProcessedTimestamp: number = 0;
@@ -24,28 +12,27 @@ export class TradeMonitor {
     this.lastProcessedTimestamp = Date.now();
     logger.info(`📊 Monitor initialized at ${new Date(this.lastProcessedTimestamp).toISOString()}`);
     logger.info(`   Will copy trades that occur AFTER this time`);
-    logger.info(`   Allowed categories: ${config.monitoring.allowedCategories.join(', ') || 'all'}`);
+    logger.info(
+      `   Allowed categories: ${config.monitoring.allowedCategories.join(', ') || 'all'}`
+    );
   }
-  
+
   private async fetchTradesFromDataApi(): Promise<Trade[]> {
     try {
       const startSeconds = Math.floor(this.lastProcessedTimestamp / 1000) + 1;
-      const response = await axios.get(
-        'https://data-api.polymarket.com/activity',
-        {
-          params: {
-            user: config.targetWallet.toLowerCase(),
-            type: 'TRADE',
-            limit: 100,
-            sortBy: 'TIMESTAMP',
-            sortDirection: 'DESC',
-            start: startSeconds,
-          },
-          headers: {
-            'Accept': 'application/json',
-          },
-        }
-      );
+      const response = await axios.get('https://data-api.polymarket.com/activity', {
+        params: {
+          user: config.targetWallet.toLowerCase(),
+          type: 'TRADE',
+          limit: 100,
+          sortBy: 'TIMESTAMP',
+          sortDirection: 'DESC',
+          start: startSeconds,
+        },
+        headers: {
+          Accept: 'application/json',
+        },
+      });
 
       if (Array.isArray(response.data)) {
         return response.data.map(this.parseDataApiTrade.bind(this));
@@ -72,7 +59,9 @@ export class TradeMonitor {
   }
 
   private normalizeOutcome(value: any): TradeOutcome {
-    const normalized = String(value ?? '').trim().toUpperCase();
+    const normalized = String(value ?? '')
+      .trim()
+      .toUpperCase();
     if (normalized === 'YES' || normalized === 'NO') {
       return normalized;
     }
@@ -90,16 +79,20 @@ export class TradeMonitor {
       this.marketCategoryCache.set(marketId, category);
       return category;
     } catch (error: any) {
-      logger.warn(`⚠️  Could not fetch market category for ${marketId}: ${error.message || 'Unknown error'}`);
+      logger.warn(
+        `⚠️  Could not fetch market category for ${marketId}: ${error.message || 'Unknown error'}`
+      );
       return null;
     }
   }
 
   private isAllowedCategory(category: string | null): boolean {
     if (!config.monitoring.allowedCategories.length) return true;
-    return category !== null && config.monitoring.allowedCategories.includes(category.toLowerCase());
+    return (
+      category !== null && config.monitoring.allowedCategories.includes(category.toLowerCase())
+    );
   }
-  
+
   async pollForNewTrades(callback: (trade: Trade) => Promise<void>): Promise<void> {
     try {
       const trades = await this.fetchTradesFromDataApi();
@@ -126,7 +119,9 @@ export class TradeMonitor {
         // Check if market category is allowed
         const category = await this.getMarketCategory(trade.market);
         if (!this.isAllowedCategory(category)) {
-          logger.info(`🚫 Skipping trade in market ${trade.market} (category: ${category || 'unknown'})`);
+          logger.info(
+            `🚫 Skipping trade in market ${trade.market} (category: ${category || 'unknown'})`
+          );
           continue;
         }
 
@@ -134,7 +129,9 @@ export class TradeMonitor {
         this.lastProcessedTimestamp = Math.max(this.lastProcessedTimestamp, trade.timestamp);
         newTradesCount++;
 
-        logger.info(`🎯 New trade detected: ${trade.side} ${trade.size} USDC @ ${trade.price.toFixed(3)}`);
+        logger.info(
+          `🎯 New trade detected: ${trade.side} ${trade.size} USDC @ ${trade.price.toFixed(3)}`
+        );
         logger.info(`   Time: ${new Date(trade.timestamp).toISOString()}`);
         logger.info(`   Category: ${category || 'unknown'}`);
         await callback(trade);

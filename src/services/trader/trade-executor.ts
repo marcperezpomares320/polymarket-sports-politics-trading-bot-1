@@ -1,9 +1,9 @@
 import axios from 'axios';
 import { ethers } from 'ethers';
 import { ClobClient, Side, OrderType, AssetType } from '@polymarket/clob-client';
-import { config } from './config.js';
-import type { Trade } from './monitor.js';
-import { logger } from './logger.js';
+import { config } from '../../config/index.js';
+import type { Trade, CopyExecutionResult } from '../../types/index.js';
+import { logger } from '../../utils/logger.js';
 
 const DATA_API_POSITIONS = 'https://data-api.polymarket.com/positions';
 
@@ -21,15 +21,6 @@ interface RetryConfig {
   initialDelay: number;
   maxDelay: number;
   backoffMultiplier: number;
-}
-
-export interface CopyExecutionResult {
-  orderId: string;
-  copyNotional: number;
-  copyShares: number;
-  price: number;
-  side: 'BUY' | 'SELL';
-  tokenId: string;
 }
 
 export class TradeExecutor {
@@ -73,7 +64,7 @@ export class TradeExecutor {
       config.polymarketGeoToken || undefined
     );
   }
-  
+
   async initialize(): Promise<void> {
     logger.info(`🔧 Initializing trader...`);
     logger.info(`   Signing wallet (EOA): ${this.wallet.address}`);
@@ -109,7 +100,9 @@ export class TradeExecutor {
   private async validateApiCredentials(): Promise<void> {
     const result: any = await this.clobClient.getApiKeys();
     if (result?.error || result?.status >= 400) {
-      throw new Error(`Invalid generated API credentials: ${result?.error || `status ${result?.status}`}`);
+      throw new Error(
+        `Invalid generated API credentials: ${result?.error || `status ${result?.status}`}`
+      );
     }
     logger.info(`✅ Generated API credentials validated`);
   }
@@ -129,7 +122,9 @@ export class TradeExecutor {
 
     logger.info(`✅ API credentials generated!`);
     logger.info(`   Credentials loaded in memory for this session`);
-    logger.info(`   To export reusable values, run: npm run generate-api-creds (writes .polymarket-api-creds)`);
+    logger.info(
+      `   To export reusable values, run: npm run generate-api-creds (writes .polymarket-api-creds)`
+    );
 
     this.apiCreds = {
       apiKey,
@@ -167,7 +162,7 @@ export class TradeExecutor {
     this.marketCache.clear();
     logger.info('🗑️  Market cache cleared');
   }
-  
+
   calculateCopySize(originalSize: number): number {
     const { positionSizeMultiplier, maxTradeSize, minTradeSize, orderType } = config.trading;
     let size = originalSize * positionSizeMultiplier;
@@ -176,7 +171,7 @@ export class TradeExecutor {
     size = Math.max(size, marketMin);
     return Math.round(size * 100) / 100;
   }
-  
+
   calculateCopyShares(originalSizeUsdc: number, price: number): number {
     const notional = this.calculateCopySize(originalSizeUsdc);
     return this.calculateSharesFromNotional(notional, price);
@@ -196,7 +191,7 @@ export class TradeExecutor {
     const cached = this.marketCache.get(tokenId);
     const now = Date.now();
 
-    if (cached && (now - cached.timestamp) < this.CACHE_TTL) {
+    if (cached && now - cached.timestamp < this.CACHE_TTL) {
       return cached;
     }
 
@@ -251,7 +246,9 @@ export class TradeExecutor {
     const validPrice = Math.max(0.01, Math.min(0.99, roundedPrice));
 
     if (Math.abs(validPrice - price) > 0.001) {
-      logger.info(`   Price adjusted: ${price.toFixed(4)} → ${validPrice.toFixed(4)} (tick size: ${tickSize})`);
+      logger.info(
+        `   Price adjusted: ${price.toFixed(4)} → ${validPrice.toFixed(4)} (tick size: ${tickSize})`
+      );
     }
 
     return validPrice;
@@ -279,7 +276,7 @@ export class TradeExecutor {
       throw new Error('No bids available in orderbook');
     }
   }
-  
+
   async executeCopyTrade(
     originalTrade: Trade,
     copyNotionalOverride?: number
@@ -303,10 +300,7 @@ export class TradeExecutor {
     });
   }
 
-  private async executeWithRetry<T>(
-    fn: () => Promise<T>,
-    attempt: number = 1
-  ): Promise<T> {
+  private async executeWithRetry<T>(fn: () => Promise<T>, attempt: number = 1): Promise<T> {
     try {
       return await fn();
     } catch (error: any) {
@@ -341,16 +335,29 @@ export class TradeExecutor {
     const responseData = error?.response?.data?.error?.toLowerCase() || '';
     const responseStatus = error?.response?.status;
 
-    if (responseStatus === 401 || errorMsg.includes('unauthorized') || responseData.includes('unauthorized')) {
+    if (
+      responseStatus === 401 ||
+      errorMsg.includes('unauthorized') ||
+      responseData.includes('unauthorized')
+    ) {
       logger.warn('   ⚠️  Unauthorized/Invalid API key - skipping trade');
       return false;
     }
-    if (responseStatus === 403 || errorMsg.includes('cloudflare') || responseData.includes('cloudflare') || responseData.includes('blocked')) {
+    if (
+      responseStatus === 403 ||
+      errorMsg.includes('cloudflare') ||
+      responseData.includes('cloudflare') ||
+      responseData.includes('blocked')
+    ) {
       logger.warn('   ⚠️  Access blocked (Cloudflare/geo restriction) - skipping trade');
       return false;
     }
 
-    if (errorMsg.includes('network') || errorMsg.includes('timeout') || errorMsg.includes('econnreset')) {
+    if (
+      errorMsg.includes('network') ||
+      errorMsg.includes('timeout') ||
+      errorMsg.includes('econnreset')
+    ) {
       return true;
     }
 
@@ -395,7 +402,10 @@ export class TradeExecutor {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  private async executeLimitOrder(originalTrade: Trade, copyNotional: number): Promise<CopyExecutionResult> {
+  private async executeLimitOrder(
+    originalTrade: Trade,
+    copyNotional: number
+  ): Promise<CopyExecutionResult> {
     await this.validateBalanceOrShares(originalTrade.side, copyNotional, originalTrade.tokenId);
 
     const [orderbook, orderOpts] = await Promise.all([
@@ -526,12 +536,19 @@ export class TradeExecutor {
         `insufficient shares to sell (have ${availableShares.toFixed(4)}, need ${copyShares.toFixed(4)})`
       );
     }
-    logger.info(`   Shares balance check passed (${availableShares.toFixed(4)} >= ${copyShares.toFixed(4)})`);
+    logger.info(
+      `   Shares balance check passed (${availableShares.toFixed(4)} >= ${copyShares.toFixed(4)})`
+    );
   }
 
   private getPositionTokenId(p: any): string | undefined {
     if (!p) return undefined;
-    const id = p.asset_id ?? p.token_id ?? p.tokenId ?? p.assetId ?? (typeof p.asset === 'string' ? p.asset : p.asset?.token_id);
+    const id =
+      p.asset_id ??
+      p.token_id ??
+      p.tokenId ??
+      p.assetId ??
+      (typeof p.asset === 'string' ? p.asset : p.asset?.token_id);
     return id ? String(id).trim() : undefined;
   }
 
@@ -555,65 +572,72 @@ export class TradeExecutor {
       });
       return Array.isArray(res.data) ? res.data : [];
     } catch (err: any) {
-      logger.warn(`⚠️  Could not fetch positions from Data API: ${err?.message || 'Unknown error'}`);
+      logger.warn(
+        `⚠️  Could not fetch positions from Data API: ${err?.message || 'Unknown error'}`
+      );
       return [];
     }
   }
 
   private async validateBalance(requiredAmount: number, tokenId: string): Promise<void> {
-    try {
-      const metadata = await this.getMarketMetadata(tokenId);
-      const exchangeAddress = metadata.negRisk ? config.contracts.negRiskExchange : config.contracts.exchange;
+    const metadata = await this.getMarketMetadata(tokenId);
+    const exchangeAddress = metadata.negRisk
+      ? config.contracts.negRiskExchange
+      : config.contracts.exchange;
 
-      const usdc = new ethers.Contract(config.contracts.usdc, this.ERC20_ABI, this.wallet);
-      const ctf = new ethers.Contract(config.contracts.ctf, this.CTF_ABI, this.wallet);
-      const decimals = await usdc.decimals();
-      const required = ethers.utils.parseUnits(requiredAmount.toString(), decimals);
+    const usdc = new ethers.Contract(config.contracts.usdc, this.ERC20_ABI, this.wallet);
+    const ctf = new ethers.Contract(config.contracts.ctf, this.CTF_ABI, this.wallet);
+    const decimals = await usdc.decimals();
+    const required = ethers.utils.parseUnits(requiredAmount.toString(), decimals);
 
-      const balance = await usdc.balanceOf(this.wallet.address);
-      if (balance.lt(required)) {
-        const bal = ethers.utils.formatUnits(balance, decimals);
-        throw new Error(`not enough balance / allowance (USDC.e balance ${bal} < required ${requiredAmount})`);
-      }
-
-      const allowanceCtf = await usdc.allowance(this.wallet.address, config.contracts.ctf);
-      if (allowanceCtf.lt(required)) {
-        const allow = ethers.utils.formatUnits(allowanceCtf, decimals);
-        throw new Error(`not enough balance / allowance (USDC.e allowance to CTF ${allow} < required ${requiredAmount})`);
-      }
-
-      const allowanceEx = await usdc.allowance(this.wallet.address, exchangeAddress);
-      if (allowanceEx.lt(required)) {
-        const allow = ethers.utils.formatUnits(allowanceEx, decimals);
-        throw new Error(`not enough balance / allowance (USDC.e allowance to Exchange ${allow} < required ${requiredAmount})`);
-      }
-
-      const clobBal = await this.clobClient.getBalanceAllowance({ asset_type: AssetType.COLLATERAL });
-      const clobBalance = parseFloat(clobBal?.balance || '0') / 1_000_000;
-      if (clobBalance < requiredAmount) {
-        throw new Error(`not enough balance / allowance (CLOB balance ${clobBalance} < required ${requiredAmount})`);
-      }
-      const clobAllowance = clobBal?.allowance || '0';
-      if (clobAllowance === '0') {
-        throw new Error(`not enough balance / allowance (CLOB allowance to Exchange is 0)`);
-      }
-
-      const approved = await ctf.isApprovedForAll(this.wallet.address, exchangeAddress);
-      if (!approved) {
-        logger.warn('   ⚠️  CTF approval missing for exchange (required for SELLs)');
-      }
-
-      logger.info(`   Balance/allowance check passed`);
-    } catch (error) {
-      throw error;
+    const balance = await usdc.balanceOf(this.wallet.address);
+    if (balance.lt(required)) {
+      const bal = ethers.utils.formatUnits(balance, decimals);
+      throw new Error(
+        `not enough balance / allowance (USDC.e balance ${bal} < required ${requiredAmount})`
+      );
     }
+
+    const allowanceCtf = await usdc.allowance(this.wallet.address, config.contracts.ctf);
+    if (allowanceCtf.lt(required)) {
+      const allow = ethers.utils.formatUnits(allowanceCtf, decimals);
+      throw new Error(
+        `not enough balance / allowance (USDC.e allowance to CTF ${allow} < required ${requiredAmount})`
+      );
+    }
+
+    const allowanceEx = await usdc.allowance(this.wallet.address, exchangeAddress);
+    if (allowanceEx.lt(required)) {
+      const allow = ethers.utils.formatUnits(allowanceEx, decimals);
+      throw new Error(
+        `not enough balance / allowance (USDC.e allowance to Exchange ${allow} < required ${requiredAmount})`
+      );
+    }
+
+    const clobBal = await this.clobClient.getBalanceAllowance({ asset_type: AssetType.COLLATERAL });
+    const clobBalance = parseFloat(clobBal?.balance || '0') / 1_000_000;
+    if (clobBalance < requiredAmount) {
+      throw new Error(
+        `not enough balance / allowance (CLOB balance ${clobBalance} < required ${requiredAmount})`
+      );
+    }
+    const clobAllowance = clobBal?.allowance || '0';
+    if (clobAllowance === '0') {
+      throw new Error(`not enough balance / allowance (CLOB allowance to Exchange is 0)`);
+    }
+
+    const approved = await ctf.isApprovedForAll(this.wallet.address, exchangeAddress);
+    if (!approved) {
+      logger.warn('   ⚠️  CTF approval missing for exchange (required for SELLs)');
+    }
+
+    logger.info(`   Balance/allowance check passed`);
   }
-  
-  
+
   async getPositions(): Promise<any[]> {
     return this.fetchPositionsFromDataApi();
   }
-  
+
   async cancelAllOrders(): Promise<void> {
     try {
       await this.clobClient.cancelAll();

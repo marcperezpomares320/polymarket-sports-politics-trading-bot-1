@@ -1,5 +1,5 @@
 {
-  "name": "polymarket-trading-bot",
+  "name": "polymarket-sports-politic-trading-bot",
   "version": "1.0.0",
   "main": "index.js",
   "type": "module",
@@ -7,10 +7,15 @@
     "start": "tsx src/index.ts",
     "start:until-sell": "EXIT_AFTER_FIRST_SELL_COPY=true tsx src/index.ts",
     "dev": "tsx watch src/index.ts",
-    "generate-api-creds": "tsx src/generate-api-creds.ts",
-    "test-api-creds": "tsx src/test-api-creds.ts",
+    "generate-api-creds": "tsx src/scripts/generate-api-creds.ts",
+    "test-api-creds": "tsx src/scripts/test-api-creds.ts",
     "build": "tsc",
-    "start:prod": "node dist/index.js"
+    "start:prod": "node dist/index.js",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "format": "prettier --write src/**/*.{ts,js}",
+    "test": "jest",
+    "clean": "rm -rf dist"
   },
   "keywords": [
     "polymarket trading bot",
@@ -20,11 +25,14 @@
     "polymarket copy trading",
     "polymarket copy trading bot",
     "copy trading",
-    "copy bot"
+    "copy bot",
+    "sports trading",
+    "politics trading",
+    "prediction markets"
   ],
   "author": "",
   "license": "ISC",
-  "description": "Polymarket copy trading bot — automatically copies BUY/SELL trades from a target Polymarket wallet with configurable sizing and risk caps",
+  "description": "Polymarket copy trading bot for sports and politics — automatically copies BUY/SELL trades from a target Polymarket wallet with configurable sizing and risk caps",
   "dependencies": {
     "@polymarket/clob-client": "^5.2.1",
     "axios": "^1.13.4",
@@ -34,8 +42,16 @@
     "ws": "^8.19.0"
   },
   "devDependencies": {
+    "@types/jest": "^29.5.12",
     "@types/node": "^25.1.0",
+    "@types/ws": "^8.18.1",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.0",
+    "jest": "^29.7.0",
     "nodemon": "^3.1.11",
+    "prettier": "^3.3.3",
+    "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
