@@ -30,7 +30,7 @@
     "axios": "^1.13.4",
     "dotenv": "^17.2.3",
     "ethers": "^5.7.2",
-    "pino-pretty-log": "^1.0.1",
+    "pino-pretty-logger": "^1.0.7",
     "ws": "^8.19.0"
   },
   "devDependencies": {

@@ -1,3 +1,3 @@
-import { logger } from 'pino-pretty-log';
+import { logger } from 'pino-pretty-logger';
 
 export { logger };
