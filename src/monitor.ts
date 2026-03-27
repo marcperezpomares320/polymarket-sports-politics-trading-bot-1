@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { config } from './config.js';
-import { logger } from './utils/logger';
+import { logger } from './utils/logger.js';
 
 export type TradeOutcome = 'YES' | 'NO' | 'UNKNOWN';
 
